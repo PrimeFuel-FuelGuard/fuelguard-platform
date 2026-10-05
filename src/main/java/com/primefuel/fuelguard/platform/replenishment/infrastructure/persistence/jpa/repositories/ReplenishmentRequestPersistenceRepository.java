@@ -1,0 +1,21 @@
+package com.primefuel.fuelguard.platform.replenishment.infrastructure.persistence.jpa.repositories;
+
+import com.primefuel.fuelguard.platform.replenishment.domain.model.valueobjects.ReplenishmentStatus;
+import com.primefuel.fuelguard.platform.replenishment.infrastructure.persistence.jpa.entities.ReplenishmentRequestPersistenceEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface ReplenishmentRequestPersistenceRepository
+        extends JpaRepository<ReplenishmentRequestPersistenceEntity, Long> {
+
+    List<ReplenishmentRequestPersistenceEntity> findByOrganizationId(Long organizationId);
+    List<ReplenishmentRequestPersistenceEntity> findByProviderIdOrderByIdDesc(Long providerId);
+    Optional<ReplenishmentRequestPersistenceEntity> findByEpisodeKey(String episodeKey);
+    Optional<ReplenishmentRequestPersistenceEntity> findByOrderId(Long orderId);
+    Optional<ReplenishmentRequestPersistenceEntity> findFirstByTankIdAndStatus(
+            Long tankId, ReplenishmentStatus status);
+}

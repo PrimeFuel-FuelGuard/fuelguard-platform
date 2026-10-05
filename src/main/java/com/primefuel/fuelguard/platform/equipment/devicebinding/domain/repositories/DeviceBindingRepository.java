@@ -1,0 +1,20 @@
+package com.primefuel.fuelguard.platform.equipment.devicebinding.domain.repositories;
+
+import com.primefuel.fuelguard.platform.equipment.devicebinding.domain.model.aggregates.DeviceBinding;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface DeviceBindingRepository {
+    Optional<DeviceBinding> findById(Long id);
+
+    Optional<DeviceBinding> findOpenByDeviceAndChannel(String deviceId, String channel);
+
+    List<DeviceBinding> findByDeviceAndChannel(String deviceId, String channel);
+
+    List<DeviceBinding> findOpenByDeviceId(String deviceId);
+
+    List<DeviceBinding> findOpenByTankId(Long tankId);
+
+    DeviceBinding save(DeviceBinding binding);
+}

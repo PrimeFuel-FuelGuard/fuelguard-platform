@@ -1,0 +1,1 @@
+package com.primefuel.fuelguard.platform.notification.infrastructure;

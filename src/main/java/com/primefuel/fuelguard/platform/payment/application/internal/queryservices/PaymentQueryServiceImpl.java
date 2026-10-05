@@ -1,0 +1,50 @@
+package com.primefuel.fuelguard.platform.payment.application.internal.queryservices;
+
+import com.primefuel.fuelguard.platform.payment.application.queryservices.PaymentQueryService;
+import com.primefuel.fuelguard.platform.payment.domain.model.aggregates.Payment;
+import com.primefuel.fuelguard.platform.payment.domain.model.queries.GetAllPaymentsQuery;
+import com.primefuel.fuelguard.platform.payment.domain.model.queries.GetPaymentsByProviderIdQuery;
+import com.primefuel.fuelguard.platform.payment.domain.model.valueobjects.ProviderPayment;
+import com.primefuel.fuelguard.platform.payment.domain.model.queries.GetPaymentByIdQuery;
+import com.primefuel.fuelguard.platform.payment.domain.model.queries.GetPaymentByOrderIdQuery;
+import com.primefuel.fuelguard.platform.payment.domain.model.queries.GetPaymentsByCompanyIdQuery;
+import com.primefuel.fuelguard.platform.payment.domain.repositories.PaymentRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class PaymentQueryServiceImpl implements PaymentQueryService {
+
+    private final PaymentRepository paymentRepository;
+
+    public PaymentQueryServiceImpl(PaymentRepository paymentRepository) {
+        this.paymentRepository = paymentRepository;
+    }
+
+    @Override
+    public List<ProviderPayment> handle(GetPaymentsByProviderIdQuery query) {
+        return paymentRepository.findByProvider(query);
+    }
+
+    @Override
+    public Optional<Payment> handle(GetPaymentByIdQuery query) {
+        return paymentRepository.findById(query.paymentId());
+    }
+
+    @Override
+    public Optional<Payment> handle(GetPaymentByOrderIdQuery query) {
+        return paymentRepository.findByOrderId(query.orderId());
+    }
+
+    @Override
+    public List<Payment> handle(GetAllPaymentsQuery query) {
+        return paymentRepository.findAll();
+    }
+
+    @Override
+    public List<Payment> handle(GetPaymentsByCompanyIdQuery query) {
+        return paymentRepository.findByCompanyId(query.companyId());
+    }
+}

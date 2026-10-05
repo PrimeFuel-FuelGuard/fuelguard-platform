@@ -1,0 +1,67 @@
+package com.primefuel.fuelguard.platform.shared.infrastructure.documentation.openapi.configuration;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+@Configuration
+public class OpenApiConfiguration {
+
+    @Value("${spring.application.name}")
+    String applicationName;
+
+    @Value("${documentation.application.description}")
+    String applicationDescription;
+
+    @Value("${documentation.application.version}")
+    String applicationVersion;
+
+    @Value("${documentation.application.server-url}")
+    String serverUrl;
+
+    @Bean
+    public OpenAPI fuelGuardPlatformOpenApi() {
+        var openApi = new OpenAPI();
+        openApi
+                .info(new Info()
+                        .title(this.applicationName)
+                        .description(this.applicationDescription)
+                        .version(this.applicationVersion)
+                        .contact(new Contact()
+                                .name("Soporte de FuelGuard")
+                                .email("support@fuelguard.app")
+                                .url("https://fuelguard.app/support"))
+                        .license(new License()
+                                .name("Apache 2.0 (licencia)")
+                                .url("https://www.apache.org/licenses/LICENSE-2.0.html")));
+
+        openApi.servers(List.of(
+                new Server()
+                        .url(this.serverUrl)
+                        .description("Servidor de la API")
+        ));
+
+        final String securitySchemeName = "bearerAuth";
+        openApi.addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
+                .components(new Components()
+                        .addSecuritySchemes(securitySchemeName,
+                                new SecurityScheme()
+                                        .name(securitySchemeName)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Token JWT Bearer para autenticar solicitudes a la API")));
+
+        return openApi;
+    }
+}

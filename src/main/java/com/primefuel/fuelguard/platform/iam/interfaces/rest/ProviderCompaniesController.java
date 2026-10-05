@@ -1,0 +1,133 @@
+package com.primefuel.fuelguard.platform.iam.interfaces.rest;
+
+import com.primefuel.fuelguard.platform.iam.application.commandservices.ProviderCompanyCommandService;
+import com.primefuel.fuelguard.platform.iam.application.queryservices.ProviderCompanyQueryService;
+import com.primefuel.fuelguard.platform.iam.domain.model.queries.GetAllProviderCompaniesQuery;
+import com.primefuel.fuelguard.platform.iam.domain.model.queries.GetProviderCompanyByIdQuery;
+import com.primefuel.fuelguard.platform.iam.domain.repositories.ProviderCompanyRepository;
+import com.primefuel.fuelguard.platform.iam.interfaces.rest.resources.CreateProviderCompanyResource;
+import com.primefuel.fuelguard.platform.iam.interfaces.rest.resources.ProviderCompanyResource;
+import com.primefuel.fuelguard.platform.iam.interfaces.rest.transform.CreateProviderCompanyCommandFromResourceAssembler;
+import com.primefuel.fuelguard.platform.iam.interfaces.rest.transform.ProviderCompanyResourceFromEntityAssembler;
+import com.primefuel.fuelguard.platform.shared.interfaces.rest.transform.ResponseEntityAssembler;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.List;
+
+@RestController
+@RequestMapping(value = "/api/provider-companies", produces = MediaType.APPLICATION_JSON_VALUE)
+@Tag(name = "Distribuidores", description = "Registro, consulta y actualización de perfiles de distribuidores")
+public class ProviderCompaniesController {
+
+    private final ProviderCompanyCommandService providerCompanyCommandService;
+    private final ProviderCompanyQueryService providerCompanyQueryService;
+    private final ProviderCompanyRepository providerCompanyRepository;
+
+    public ProviderCompaniesController(ProviderCompanyCommandService providerCompanyCommandService,
+                                       ProviderCompanyQueryService providerCompanyQueryService,
+                                       ProviderCompanyRepository providerCompanyRepository) {
+        this.providerCompanyCommandService = providerCompanyCommandService;
+        this.providerCompanyQueryService = providerCompanyQueryService;
+        this.providerCompanyRepository = providerCompanyRepository;
+    }
+
+    /**
+     * Registra un perfil independiente de distribuidor.
+     *
+     * <p>Es una operación pública de autoservicio: no requiere autenticación ni crea una cuenta de usuario o membresía.
+     * Los fallos de persistencia se responden como error del servidor.</p>
+     */
+    @Operation(summary = "Registrar distribuidor",
+            description = "Persiste un nuevo perfil de distribuidor. La ruta está disponible sin autenticación y no crea usuarios ni membresías.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Perfil de distribuidor creado."),
+            @ApiResponse(responseCode = "500", description = "Se produjo un error inesperado al guardar el perfil.")
+    })
+    @PostMapping
+    public ResponseEntity<?> createProviderCompany(@RequestBody CreateProviderCompanyResource resource) {
+        var command = CreateProviderCompanyCommandFromResourceAssembler.toCommandFromResource(resource);
+        var result = providerCompanyCommandService.handle(command);
+        return ResponseEntityAssembler.toResponseEntityFromResult(
+                result,
+                ProviderCompanyResourceFromEntityAssembler::toResourceFromEntity,
+                HttpStatus.CREATED);
+    }
+
+    /**
+     * Lista todos los distribuidores registrados.
+     *
+     * <p>Requiere rol de comprador para permitir la selección de distribuidores.</p>
+     */
+    @Operation(summary = "Listar distribuidores",
+            description = "Devuelve todos los perfiles de distribuidor. Requiere el rol comprador.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Se devuelve la lista de distribuidores."),
+            @ApiResponse(responseCode = "403", description = "El usuario no cuenta con el rol comprador.")
+    })
+    @GetMapping
+    @PreAuthorize("@currentUserAccess.isBuyerRole()")
+    public ResponseEntity<List<ProviderCompanyResource>> getAllProviderCompanies() {
+        var companies = providerCompanyQueryService.handle(new GetAllProviderCompaniesQuery());
+        var resources = companies.stream().map(ProviderCompanyResourceFromEntityAssembler::toResourceFromEntity).toList();
+        return new ResponseEntity<>(resources, HttpStatus.OK);
+    }
+
+    /**
+     * Consulta un distribuidor.
+     *
+     * <p>Puede consultarlo un usuario con rol comprador o el tenant propietario del perfil.</p>
+     */
+    @Operation(summary = "Consultar distribuidor por identificador",
+            description = "Devuelve el perfil indicado a un usuario con rol comprador o al tenant distribuidor propietario.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Perfil de distribuidor devuelto."),
+            @ApiResponse(responseCode = "403", description = "El usuario no tiene rol comprador ni pertenece al distribuidor indicado."),
+            @ApiResponse(responseCode = "404", description = "El distribuidor no existe.")
+    })
+    @GetMapping("/{providerId}")
+    @PreAuthorize("@currentUserAccess.isBuyerRole() or @currentUserAccess.ownsProvider(#providerId)")
+    public ResponseEntity<ProviderCompanyResource> getProviderCompanyById(@PathVariable Long providerId) {
+        var result = providerCompanyQueryService.handle(new GetProviderCompanyByIdQuery(providerId));
+        return result.map(company -> new ResponseEntity<>(
+                        ProviderCompanyResourceFromEntityAssembler.toResourceFromEntity(company), HttpStatus.OK))
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * Actualiza el perfil de un distribuidor.
+     *
+     * <p>Solo el tenant propietario puede actualizarlo. Los campos editables se sustituyen con los valores recibidos.</p>
+     */
+    @Operation(summary = "Actualizar distribuidor",
+            description = "Reemplaza los campos editables del perfil indicado; la calificación (rating) no es editable y se conserva. Requiere pertenecer a ese tenant distribuidor.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Perfil de distribuidor actualizado."),
+            @ApiResponse(responseCode = "403", description = "El distribuidor indicado no pertenece al usuario autenticado."),
+            @ApiResponse(responseCode = "404", description = "El distribuidor no existe.")
+    })
+    @PutMapping("/{providerId}")
+    @PreAuthorize("@currentUserAccess.ownsProvider(#providerId)")
+    public ResponseEntity<ProviderCompanyResource> updateProviderCompany(@PathVariable Long providerId,
+                                                                         @RequestBody CreateProviderCompanyResource resource) {
+        var result = providerCompanyRepository.findById(providerId);
+        if (result.isEmpty()) return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        var provider = result.get();
+        provider.setName(resource.name());
+        provider.setRuc(resource.ruc());
+        // El propio distribuidor no edita su calificación: se ignora `rating` (antes, omitirlo la borraba).
+        provider.setAddress(resource.address());
+        provider.setPhone(resource.phone());
+        provider.setFuelTypesOffered(resource.fuelTypesOffered());
+        provider.setDescription(resource.description());
+        var updated = providerCompanyRepository.save(provider);
+        return new ResponseEntity<>(ProviderCompanyResourceFromEntityAssembler.toResourceFromEntity(updated), HttpStatus.OK);
+    }
+}

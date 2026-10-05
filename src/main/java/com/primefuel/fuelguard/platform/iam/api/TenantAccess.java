@@ -1,0 +1,18 @@
+package com.primefuel.fuelguard.platform.iam.api;
+
+import java.util.Optional;
+
+public interface TenantAccess {
+
+    boolean ownsCompany(Long companyId);
+
+    boolean ownsProvider(Long providerId);
+
+    boolean ownsUser(Long userId);
+
+    boolean ownsCompanyOrProvider(Long companyId, Long providerId);
+
+    boolean isBuyerRole();
+
+    Optional<Long> currentProviderId();
+}

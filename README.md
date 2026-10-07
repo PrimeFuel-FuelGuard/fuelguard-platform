@@ -76,8 +76,12 @@ En producción, Swagger UI queda en `<SERVER_URL>/swagger-ui.html`.
 
 ## Primer administrador
 
-Registra primero un usuario desde Swagger UI (`POST /api/authentication/sign-up`). Luego crea el primer administrador con el procedimiento manual de `scripts/seed-first-admin.sql`, ejecutándolo con el nombre de ese usuario sobre la base de datos. Inicia sesión de nuevo después del cambio para obtener un JWT con los roles actualizados.
+Crea el primer administrador con el procedimiento manual de `scripts/seed-first-admin.sql`. Inicia sesión de nuevo después del cambio para obtener un JWT con los roles actualizados.
+
+El script no crea usuarios, solo asigna `ROLE_ADMIN` a uno existente: primero registra el usuario desde Swagger UI (`POST /api/authentication/sign-up`) y luego ejecuta el script con ese nombre de usuario.
 
 ## Esquema de base de datos
 
-Flyway es responsable de los cambios de esquema (V1–V38). Se ejecuta al iniciar la aplicación y crea las tablas en una base vacía. Hibernate usa `ddl-auto=validate`; no crea ni modifica tablas en ejecución. No edites migraciones que ya se hayan aplicado: agrega una nueva migración con el siguiente número. Las tablas `drivers` y `vehicles` se mantienen porque Fleet v2 las utiliza.
+Flyway es responsable de los cambios de esquema (V1–V38). Hibernate usa `ddl-auto=validate`; no crea ni modifica tablas en ejecución. No edites migraciones que ya se hayan aplicado: agrega una nueva migración con el siguiente número. Las tablas `drivers` y `vehicles` se mantienen porque Fleet v2 las utiliza.
+
+Flyway se ejecuta al iniciar la aplicación y crea las tablas cuando la base está vacía.

@@ -58,6 +58,7 @@ Nota sobre el 404: el Swagger de ambos endpoints declara 404 para una solicitud 
 - `ReplenishmentInboxIntegrationTest`: inbox con todos los clientes y estados, exclusión de otros distribuidores, orden y 403 para comprador.
 - `ReplenishmentInboxAuthorizationIntegrationTest`: inbox con la identidad real (sin simular `TenantAccess`): lista vacía `[]`, aislamiento por distribuidor, contrato JSON completo, 403 para comprador o rol de distribuidor sin identidad, y 401 sin autenticar.
 - `ReplenishmentRejectIntegrationTest`: rechazo correcto con motivo guardado, 400 por motivo vacío, otro distribuidor, sin identidad, id inexistente, doble rechazo, rechazo de una cancelada y aceptación posterior a un rechazo.
+- `ReplenishmentAcceptAccessIntegrationTest`: quién no puede aceptar, con identidad real: otro distribuidor, id inexistente (403), comprador, rol de distribuidor sin identidad y 401 sin autenticar. En todos los casos la solicitud queda `PENDING` y sin orden.
 - `ReplenishmentAcceptanceIntegrationTest` y `StateLifecycleRetryCharacterizationTest`: aceptación con orden vinculada, reintento con 409 y rechazo de una ya aceptada.
 - `AuthorizationContractTest`: un distribuidor ajeno recibe 403 al aceptar.
 

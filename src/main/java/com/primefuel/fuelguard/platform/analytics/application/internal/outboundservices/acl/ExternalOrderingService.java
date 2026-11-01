@@ -47,6 +47,7 @@ public class ExternalOrderingService {
         return toData(orderingContextFacade.fetchAllOrders());
     }
 
+    /** Mapea el resumen de órdenes del contexto Ordering normalizando la cantidad a litros. */
     private List<OrderData> toData(List<OrderingContextFacade.OrderSummary> orders) {
         return orders.stream()
                 .map(

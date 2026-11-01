@@ -17,6 +17,7 @@ public class ExternalFulfillmentService {
         this.fulfillmentContextFacade = fulfillmentContextFacade;
     }
 
+    /** Obtiene el listado de todos los estados de entrega desde fulfillment. */
     public List<String> fetchAllDeliveryStatuses() {
         return fulfillmentContextFacade.fetchAllDeliveryStatuses();
     }

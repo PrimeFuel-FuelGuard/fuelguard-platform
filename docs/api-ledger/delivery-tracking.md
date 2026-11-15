@@ -62,3 +62,60 @@ Devuelve todas las muestras de la entrega, ordenadas de la más antigua a la má
 | 401 | Sin autenticar (regla general de seguridad de la aplicación) |
 | 403 | El usuario no es el distribuidor propietario ni el conductor asignado (el conductor solo cuenta si pertenece al mismo distribuidor que la entrega) |
 | 404 | La entrega o su conductor no existen; en `/tracking`, también cuando la entrega aún no tiene seguimiento |
+
+## Registrar evidencia de transporte
+
+`POST /api/deliveries/{deliveryId}/transport-evidence` lo usa la aplicación del conductor para informar una ubicación o un hito de carga.
+
+### Quién puede
+
+Solo el conductor asignado. El controller exige un usuario autenticado cuyo `userId` coincida con el del conductor de la entrega, y que el conductor pertenezca al mismo distribuidor que la entrega. No comprueba un rol concreto, solo esa identidad. La entrega y el conductor se resuelven en el servidor, nunca desde el cuerpo.
+
+### Cuerpo
+
+El mismo cuerpo sirve para dos tipos de evidencia. Solo `type` es obligatorio a nivel de formato; el resto se exige según el tipo.
+
+```json
+{"type":"POSITION","latitude":10.5,"longitude":-66.9,"accuracyMeters":8.0,"recordedAt":"2026-09-01T10:00:00Z","eventId":"offline-retry-1"}
+```
+
+```json
+{"type":"LOAD","milestone":"LOADED","volume":120.0,"unit":"LITRE","recordedAt":"2026-09-01T09:00:00Z"}
+```
+
+| Campo | Regla |
+|---|---|
+| `type` | Obligatorio. `POSITION` o `LOAD`, sin distinguir mayúsculas. Otro valor da 400 |
+| `latitude`, `longitude` | Obligatorios en `POSITION`. Latitud entre -90 y 90, longitud entre -180 y 180. Fuera de rango o ausentes da 400 |
+| `accuracyMeters` | Opcional. Si viene, no puede ser negativo |
+| `recordedAt` | Obligatorio en `POSITION`. En `LOAD` es opcional y, si falta, se usa la hora del servidor. No puede estar más de 2 minutos en el futuro respecto al reloj del servidor; si lo está, da 400 |
+| `milestone` | Obligatorio en `LOAD`: `LOADED` o `UNLOADED`. Otro valor da 400 |
+| `volume`, `unit` | Opcionales en `LOAD`. Si hay `volume`, debe ser mayor que cero (si no, 400). `unit` vacío se toma como `LITRE`, y una unidad no reconocida también se toma como `LITRE` |
+| `eventId` | Opcional, máximo 160 caracteres. Llave de idempotencia por entrega |
+
+### Efectos
+
+- **Posición:** guarda la muestra y, si es más nueva que la última, actualiza la posición del último estado. Publica el evento `delivery.telemetry.received.v1`.
+- **Carga:** guarda la muestra y, si es más nueva que el último hito, actualiza el estado de carga. No publica ese evento.
+- **Muestra tardía:** si su `recordedAt` no es estrictamente posterior al último de su tipo, se acepta (201), se conserva como evidencia y responde `latestAdvanced: false`. El último estado no cambia.
+- **Secuencia de carga:** `UNLOADED` antes de que la entrega haya tenido un `LOADED` da 422. Solo se valida la secuencia en la muestra que avanzaría el último estado: una muestra de carga tardía no se rechaza aunque rompa la secuencia.
+- **Reintento con `eventId`:** si la entrega ya tiene una muestra con ese `eventId`, responde 200 con la confirmación original, sin guardar otra muestra ni publicar otro evento. Un duplicado concurrente que choca con la restricción única también termina en 200 con la confirmación ya guardada.
+
+### Respuesta
+
+```json
+{"evidenceId":120,"deliveryId":31,"kind":"POSITION","milestone":null,"latestAdvanced":true,"recordedAt":"2026-09-01T10:00:00Z"}
+```
+
+`milestone` solo se informa en las evidencias de carga.
+
+| Código | Cuándo |
+|---|---|
+| 201 | Evidencia registrada (`latestAdvanced` indica si movió el último estado) |
+| 200 | El `eventId` ya estaba registrado para la entrega; se devuelve la confirmación original |
+| 400 | Cuerpo inválido: `type` o `milestone` desconocido, coordenadas ausentes o fuera de rango, `recordedAt` ausente en posición o demasiado adelantado, volumen no positivo |
+| 401 | Sin autenticar (regla general de seguridad de la aplicación) |
+| 403 | El usuario no es el conductor asignado, o la asignación cruza distribuidores, o no hay identidad de usuario |
+| 404 | La entrega o el conductor asignado no existen |
+| 409 | Dos escrituras actualizaron el último estado a la vez (`DELIVERYTRACKING_CONFLICT`); el cliente puede reintentar. No figura en el Swagger |
+| 422 | Hito de carga imposible, por ejemplo descargar antes de cargar (`BUSINESS_RULE_VIOLATION`) |

@@ -1,5 +1,10 @@
 package com.primefuel.fuelguard.platform.tracking;
 
+/**
+ * Acceptance & Integration Tests for US-14 / US-33 (Sprint 3)
+ * Validates route performance KPIs, delivery timeliness, and analytics endpoints.
+ */
+
 import com.primefuel.fuelguard.platform.iam.infrastructure.authorization.sfs.model.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

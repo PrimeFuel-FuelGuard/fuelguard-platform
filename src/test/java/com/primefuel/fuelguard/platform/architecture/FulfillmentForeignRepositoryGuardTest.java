@@ -1,5 +1,10 @@
 package com.primefuel.fuelguard.platform.architecture;
 
+/**
+ * Architectural Governance & Quality Guard (Sprint 3)
+ * Enforces hexagonal boundary isolation: zero foreign repository imports in fulfillment and tracking.
+ */
+
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

@@ -119,3 +119,50 @@ El mismo cuerpo sirve para dos tipos de evidencia. Solo `type` es obligatorio a 
 | 404 | La entrega o el conductor asignado no existen |
 | 409 | Dos escrituras actualizaron el último estado a la vez (`DELIVERYTRACKING_CONFLICT`); el cliente puede reintentar. No figura en el Swagger |
 | 422 | Hito de carga imposible, por ejemplo descargar antes de cargar (`BUSINESS_RULE_VIOLATION`) |
+
+## Crear una versión de la geocerca
+
+`POST /api/deliveries/{deliveryId}/geofence-policies` crea una versión nueva del círculo de seguridad de una entrega. Las versiones anteriores se conservan. La geocerca es un dato para la decisión de seguridad, no un mecanismo de prevención física; la autorización o el bloqueo lógico de la válvula se resuelven por separado.
+
+### Quién puede
+
+Solo el distribuidor propietario de la entrega: usuario con `ROLE_PROVIDER` y `providerId` igual al de la entrega. El controller comprueba en este orden:
+
+1. Sin identidad de distribuidor: 403.
+2. Entrega inexistente: 404.
+3. Entrega de otro distribuidor: 403.
+
+El distribuidor sale del usuario autenticado, no del cuerpo.
+
+### Cuerpo
+
+```json
+{"centerLatitude":10.0,"centerLongitude":20.0,"radiusMeters":1000.0}
+```
+
+| Campo | Regla |
+|---|---|
+| `centerLatitude` | Obligatorio. Entre -90 y 90 |
+| `centerLongitude` | Obligatorio. Entre -180 y 180 |
+| `radiusMeters` | Obligatorio. Mayor que cero, en metros |
+
+Un campo ausente o un valor fuera de rango da 400.
+
+### Versionado
+
+La primera política de una entrega tiene `policyVersion` 1 y cada nueva suma 1. Crear una versión nueva no modifica las decisiones de seguridad ya guardadas: siguen apuntando a la versión que regía cuando se tomaron. Una evaluación posterior usa la versión vigente.
+
+### Respuesta
+
+```json
+{"id":5,"deliveryId":31,"providerId":4,"centerLatitude":10.0,"centerLongitude":20.0,"radiusMeters":1000.0,"policyVersion":1}
+```
+
+| Código | Cuándo |
+|---|---|
+| 201 | Versión de política creada |
+| 400 | Cuerpo inválido o geometría fuera de rango |
+| 401 | Sin autenticar (regla general de seguridad de la aplicación) |
+| 403 | Sin identidad de distribuidor, o la entrega es de otro distribuidor |
+| 404 | La entrega no existe |
+| 409 | Ya existe una versión concurrente para la entrega (`GEOFENCEPOLICY_CONFLICT`) |

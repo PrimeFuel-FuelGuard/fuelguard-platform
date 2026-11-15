@@ -166,3 +166,27 @@ La primera política de una entrega tiene `policyVersion` 1 y cada nueva suma 1.
 | 403 | Sin identidad de distribuidor, o la entrega es de otro distribuidor |
 | 404 | La entrega no existe |
 | 409 | Ya existe una versión concurrente para la entrega (`GEOFENCEPOLICY_CONFLICT`) |
+
+## Qué está verificado por pruebas
+
+- `TransportEvidenceControllerTest`: posición válida que avanza el último estado, reintento con `eventId` (200 con la misma confirmación, una sola muestra y una sola publicación), duplicado concurrente simulado con mocks, conductor distinto (403), asignación entre distribuidores (403), muestra tardía conservada sin retroceder el último estado, hitos de carga válidos, hito desconocido (400), volumen negativo (400) y descarga antes de carga (422).
+- `DeliveryTrackingQueryControllerTest`: el conductor asignado y el distribuidor propietario ven el último estado (también el conductor sin identidad de distribuidor), historial ordenado por `recordedAt` con muestras desordenadas, distribuidor ajeno (403) en ambos `GET`, entrega sin seguimiento (404) y estado de carga visible en el último estado.
+- `GeofenceEvaluationTest`: creación de la geocerca por HTTP (201, `policyVersion` 1), distribuidor ajeno (403), latitud, longitud y radio inválidos (400), entrega inexistente (404), segunda versión con `policyVersion` 2 sin alterar decisiones previas (por el servicio, no por HTTP) y rechazo de una muestra a más de 2 minutos en el futuro (121 segundos falla, 120 se acepta).
+- `DeliveryTrackingTest`: reglas del último estado a nivel de dominio: avanza solo con una muestra más nueva, una hora empatada no avanza, no se descarga antes de cargar, y una carga tardía no retrocede el estado ni se rechaza aunque rompa la secuencia.
+
+## Qué no tiene prueba directa
+
+Estas afirmaciones salen del código, pero ninguna prueba las ejerce:
+
+- `GET /tracking/samples` de una entrega existente sin muestras (lista vacía), y 404 por conductor inexistente.
+- El 401 de las cuatro rutas, que depende de la regla general `anyRequest().authenticated()`.
+- El 409 de `transport-evidence` (`DELIVERYTRACKING_CONFLICT`) y el de `geofence-policies` (`GEOFENCEPOLICY_CONFLICT`).
+- La repetición con `eventId` en evidencia de tipo `LOAD`, y el redondeo de unidades desconocidas a `LITRE`.
+- Un campo ausente en el cuerpo de la geocerca: la validación de formato (`@NotNull`) devuelve 400 por código, pero las pruebas solo cubren valores fuera de rango.
+- El 400 por `recordedAt` en el futuro a través de HTTP: la prueba existente llama al servicio, no al endpoint.
+
+## Notas
+
+- Los 403 y 404 de estos controllers no tienen cuerpo; los 400, 409 y 422 sí usan `{code, message, details}`.
+- Los ejemplos JSON son ilustrativos: los identificadores y las horas no vienen de una ejecución real.
+- Las comprobaciones de este documento se hicieron sobre el código de `main` y sus pruebas. No se ejecutó ningún endpoint contra un entorno desplegado.

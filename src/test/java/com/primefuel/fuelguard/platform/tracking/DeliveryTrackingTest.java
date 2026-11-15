@@ -1,5 +1,10 @@
 package com.primefuel.fuelguard.platform.tracking;
 
+/**
+ * Acceptance & Integration Tests for US-12 / US-07 / US-13 (Sprint 3)
+ * Validates delivery state transitions, transit dispatch, and pit delivery completion.
+ */
+
 import com.primefuel.fuelguard.platform.shared.domain.model.valueobjects.Unit;
 import com.primefuel.fuelguard.platform.shared.domain.model.valueobjects.Volume;
 import com.primefuel.fuelguard.platform.tracking.domain.model.aggregates.DeliveryTracking;

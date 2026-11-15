@@ -1,5 +1,10 @@
 package com.primefuel.fuelguard.platform.safety;
 
+/**
+ * Acceptance & Integration Tests for US-54 (Sprint 3)
+ * Validates geofence evaluation rules, perimeter authorization, and valve security locks.
+ */
+
 import com.primefuel.fuelguard.platform.fleet.api.FleetRegistry;
 import com.primefuel.fuelguard.platform.fleet.domain.model.commands.RegisterDriverCommand;
 import com.primefuel.fuelguard.platform.fulfillment.domain.model.aggregates.Delivery;

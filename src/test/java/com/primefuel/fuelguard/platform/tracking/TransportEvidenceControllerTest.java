@@ -1,5 +1,10 @@
 package com.primefuel.fuelguard.platform.tracking;
 
+/**
+ * Acceptance & Integration Tests for US-55 / US-56 (Sprint 3)
+ * Validates GPS waypoint tracking, in-transit telemetry, and custody chain verification.
+ */
+
 import com.primefuel.fuelguard.platform.fleet.api.FleetRegistry;
 import com.primefuel.fuelguard.platform.fleet.api.FleetCatalog;
 import com.primefuel.fuelguard.platform.fulfillment.api.DeliveryTrackingLookup;
